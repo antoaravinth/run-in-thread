@@ -7,7 +7,7 @@ function runInThread(asyncFunction) {
             console.log(JSON.stringify(e.data[2]))
             const fn = new Function("return " + e.data[1])();
             console.log(fn.toString())
-            fn("anto","aravinth");
+            fn(...e.data[2]);
             self.close();
         }
 
@@ -36,4 +36,4 @@ const getName = runInThread(async (username,test) => {
     console.log("callled..",username,test)
 });
 
-getName('developit')
+getName('developit','arav')
