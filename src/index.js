@@ -1,68 +1,40 @@
 var Worker = require('webworker-threads').Worker;
 
-
+const a = 6;
 function runInThread(asyncFunction) {
 
-    const fn = () => {
-        this.onmessage = (e) => {
-            console.log(JSON.stringify(e));
-            console.log("h");
-            // console.log(userFn)
-
-            /*
-            Promise.resolve(e.data[1]).then(
-                asyncFunction.apply.bind(asyncFunction, asyncFunction)
-            ).then(
-                d => {
-                    postMessage([e.data[0], 0, d]);
-                },
-                e => {
-                    postMessage([e.data[0], 1, ''+e]);
-                }
-            )*/
-
+    let worker = new Worker(() => {
+        this.onmessage =  (e) => {
+            console.log(JSON.stringify(e.data))
+            const fn = new Function("return " + e.data[1])(e.data[2]);
+            console.log(fn.toString())
+            fn();
             self.close();
         }
-    };
 
-    let worker = new Worker(fn);
+        this.onerror = (e) => {
+            console.log(e)
+        }
+    });
+
 
     worker.onmessage = e => {
-      console.log(e)
       console.log(JSON.stringify(e));
     };
 
     return function(args) {
         args = [].slice.call(arguments);
         return new Promise(() => {
-          worker.postMessage([0,args])
+          const code = Function.prototype.toString.call(asyncFunction);
+          worker.postMessage([0,code,args])
         })
     }
 }
 
 
 
-const getName = runInThread(async username => {
-    console.log("callled..")
+const getName = runInThread((username) => {
+    console.log("callled..",username)
 });
 
 getName('developit')
-
-/*
-const asyncFn = () => {
-    postMessage("I'm working before postMessage('ali').");
-    this.onmessage = function(event) {
-        postMessage('Hi ' + event.data);
-        self.close();
-    };
-};
-
-// You may also pass in a function:
-var worker = new Worker(asyncFn);
-
-
-worker.onmessage = function(event) {
-    console.log("Worker said : " + event.data);
-};
-worker.postMessage('ali');
-*/
