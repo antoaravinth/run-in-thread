@@ -1,14 +1,13 @@
 var Worker = require('webworker-threads').Worker;
 
-const a = 6;
 function runInThread(asyncFunction) {
 
     let worker = new Worker(() => {
         this.onmessage =  (e) => {
-            console.log(JSON.stringify(e.data))
-            const fn = new Function("return " + e.data[1])(e.data[2]);
+            console.log(JSON.stringify(e.data[2]))
+            const fn = new Function("return " + e.data[1])();
             console.log(fn.toString())
-            fn();
+            fn("anto","aravinth");
             self.close();
         }
 
@@ -33,8 +32,8 @@ function runInThread(asyncFunction) {
 
 
 
-const getName = runInThread((username) => {
-    console.log("callled..",username)
+const getName = runInThread(async (username,test) => {
+    console.log("callled..",username,test)
 });
 
 getName('developit')
