@@ -1,39 +1,56 @@
-var Worker = require('webworker-threads').Worker;
+const Worker = require('webworker-threads').Worker;
 
 function runInThread(asyncFunction) {
 
     let worker = new Worker(() => {
+
         this.onmessage =  (e) => {
-            console.log(JSON.stringify(e.data[2]))
             const fn = new Function("return " + e.data[1])();
-            console.log(fn.toString())
-            fn(...e.data[2]);
-            self.close();
-        }
+            Promise.resolve(e.data[2]).then(
+                fn.apply.bind(fn,...e.data[2])
+            ).then(
+                d => {
+                    postMessage([e.data[0], 0, d]);
+                    self.close();
+                },
+                er => {
+                    postMessage([e.data[0],1,er]);
+                    self.close();
+                }
+            );
+        };
 
         this.onerror = (e) => {
-            console.log(e)
-        }
+            self.close();
+        };
+
     });
 
+    let promises = {} , currentId = 0;
 
     worker.onmessage = e => {
-      console.log(JSON.stringify(e));
+      promises[e.data[0]][e.data[1]](e.data[2]);
+      promises[e.data[0]] = null;
     };
 
     return function(args) {
         args = [].slice.call(arguments);
-        return new Promise(() => {
+        return new Promise(function() {
+          promises[++currentId] = arguments;
           const code = Function.prototype.toString.call(asyncFunction);
-          worker.postMessage([0,code,args])
+          worker.postMessage([currentId,code,args])
         })
     }
 }
 
 
 
-const getName = runInThread(async (username,test) => {
-    console.log("callled..",username,test)
+const getName = runInThread((fetch) => {
+    console.log("answer is",fetch)
+    return "anto aravinth"
 });
 
-getName('developit','arav')
+
+getName("anto").then((data) => {
+    console.log(data)
+});
